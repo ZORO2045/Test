@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fish Game</title>
+    <style>
+        body {
+            overflow: hidden;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            user-select: none; /* Disable text selection */
+        }
+        canvas {
+            width: 100%;
+            background: #eee;
+        }
+        #button, #reset {
+            width: 100%;
+            height: 50px;
+            border-radius: 5px;
+            background: #e60000;
+            color: #fff;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #button:hover, #reset:hover {
+            background: #ff3333;
+        }
+        .div1 {
+            display: flex;
+            justify-content: space-between;
+            margin: 1rem 0;
+        }
+        img {
+            width: 50px;
+            height: auto;
+        }
+        #developer {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+        #developer a {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #ff6b6b, #ffb74d);
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.3s;
+        }
+        #developer a:hover {
+            background: linear-gradient(45deg, #ff4c4c, #ff9e1a);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas">If you see this, your browser is not supported.</canvas>
+    <hr>
+    <div class="div1">
+        <button id="reset">Restart Game</button>
+        <img src="https://telegra.ph/file/415cc0be3f9ba154c97e5.jpg" />
+        <button id="reset">Fish Game</button>
+    </div>
+    <hr>
+    <button id="button">Press to Play</button>
+    <center>
+        <hr>
+        <div id="developer"><a href="https://t.me/your_telegram_username">Developer: ፚ Ꭷ Ꮢ Ꭷ ❥</a></div>
+    </center>
+    <script>
+        window.onload = () => {
+            "use strict";
+            const c = document.getElementById("canvas");
+            const ctx = c.getContext("2d");
+            const cW = c.width = 700;
+            const cH = c.height = 750;
+            const btn = document.getElementById("button");
+            const reset = document.getElementById("reset");
+
+            const allImgAudio = [
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6ziH5FzxgRgzDN3kTzTLtituhASPuKpfAkA&usqp=CAU",
+                "https://i.ibb.co/k629f7k/spritesheet.png",
+                "https://i.ibb.co/VxJFn9C/pipe.png",
+                "",
+                "https://www.myinstants.com/media/sounds/sfx_wing.mp3"
+            ];
+
+            const backgroundImg = new Image();
+            backgroundImg.src = allImgAudio[0];
+
+            const birdImg = new Image();
+            birdImg.src = allImgAudio[1];
+
+            const pipeImg = new Image();
+            pipeImg.src = allImgAudio[2];
+
+            const bgMusic = new Audio();
+            bgMusic.src = "";
+
+            const birdFlap = new Audio();
+            birdFlap.src = allImgAudio[4];
+
+            let variables = ['false', '0', '0', '0', '0', '2', '10', "false", "false", "false"];
+            let [btnPressed, angle, hue, frame, score, gameSpeed, up, gameoverho, birdflysound, btndown] = variables;
+
+            const bg = {
+                x1: 0,
+                x2: cW,
+                y: 0,
+                width: cW,
+                height: cH
+            }
+
+            function handleBackground() {
+                if (bg.x1 - gameSpeed <= -bg.width) bg.x1 = bg.width;
+                else bg.x1 -= gameSpeed;
+
+                if (bg.x2 - gameSpeed <= -bg.width) bg.x2 = bg.width;
+                else bg.x2 -= gameSpeed;
+
+                ctx.drawImage(backgroundImg, bg.x1, bg.y, bg.width, bg.height);
+                ctx.drawImage(backgroundImg, bg.x2, bg.y, bg.width, bg.height);
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, cW, cH);
+                handleBackground();
+                bird.update();
+                bird.draw();
+                handleParticles();
+                handleObstacles();
+                ctx.font = "5em Georgia";
+                ctx.fillStyle = "red";
+                ctx.fillText(score, cW / 40, cH / 10);
+                ctx.strokeText(score, cW, 70);
+                handleCollision();
+                if (handleCollision()) {
+                    return;
+                }
+                window.requestAnimationFrame(animate);
+                angle -= 0.12;
+                hue++;
+                frame++;
+            }
+
+            class Bird {
+                constructor() {
+                    this.x = 150;
+                    this.y = 200;
+                    this.vy = 0;
+                    this.orignalWidth = 670;
+                    this.orignalHeight = 588;
+                    this.width = this.orignalWidth / 15;
+                    this.height = this.orignalWidth / 15;
+                    this.weight = 1;
+                    this.frameX = 0;
+                }
+                update() {
+                    let curve = Math.sin(angle) * 20;
+                    if (this.y > cH - (this.height * 3) + curve) {
+                        this.y = cH - (this.height * 3) + curve;
+                        this.vy = 0;
+                    } else {
+                        this.vy += this.weight;
+                        this.vy *= 0.9;
+                        this.y += this.vy;
+                    }
+                    if (this.y < 0 + this.height) {
+                        this.y = 0 + this.height;
+                        this.vy = 0;
+                    }
+                    if (btnPressed === true && this.y > (this.height * 3) + curve) {
+                        this.flap();
+                    }
+                }
+                draw() {
+                    ctx.fillStyle = "red";
+                    ctx.drawImage(birdImg, this.frameX * this.orignalWidth, 0, this.orignalWidth, this.orignalHeight, this.x - 15, this.y - 10, this.width * 1.5, this.height * 1.5);
+                }
+                flap() {
+                    this.vy -= 2;
+                    if (this.frameX >= 3) {
+                        this.frameX = 0;
+                        btn.addEventListener("click", handlePlayButton, false);
+                        playAudio();
+                    } else if (frame % 2 === 0) {
+                        this.frameX++;
+                    }
+                }
+            }
+
+            const bird = new Bird();
+
+            async function playAudio() {
+                try {
+                    await birdFlap.play();
+                } catch (err) {
+                    birdFlap.pause();
+                }
+            }
+
+            function handlePlayButton() {
+                if (birdflysound === true) {
+                    birdFlap.play();
+                } else {
+                    birdFlap.pause();
+                }
+            }
+
+            btn.ontouchstart = () => {
+                btnPressed = true;
+                btn.style.background = `hsla(${hue},100%,50%,0.8)`;
+                birdflysound = true;
+            };
+
+            btn.ontouchend = () => {
+                btnPressed = false;
+                bird.frameX = 0;
+                birdflysound = false;
+            };
+
+            // Add event listener for keyboard controls
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    btnPressed = true;
+                    bird.flap(); // Call flap directly
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    btnPressed = false;
+                    bird.frameX = 0;
+                }
+            });
+
+            let particlesArray = [];
+
+            class Particle {
+                constructor() {
+                    this.x = bird.x;
+                    this.y = bird.y;
+                    this.size = Math.random() * 9 + 3;
+                    this.speedY = (Math.random() * 1) - 0.5;
+                    this.color = `hsla(${hue},100%,50%,0.8)`;
+                }
+                update() {
+                    this.x -= gameSpeed;
+                    this.y += this.speedY;
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            };
+
+            function handleParticles() {
+                particlesArray.unshift(new Particle);
+                for (let i in particlesArray) {
+                    particlesArray[i].update();
+                    particlesArray[i].draw();
+                }
+                if (particlesArray.length > 200) {
+                    for (let v = 0; v < 20; v++) {
+                        particlesArray.pop(particlesArray[v]);
+                    }
+                }
+            }
+
+            let obstaclesArray = [];
+
+            class Obstacles {
+                constructor() {
+                    this.top = (Math.random() * cH / 3) + 70;
+                    this.bottom = (Math.random() * cH / 3) + 90;
+                    this.x = cW;
+                    this.width = 40;
+                    this.color = `hsl(${hue},100%,75%)`;
+                    this.obstaclepassed = false;
+                    this.orignalWidth = this.width * 6;
+                    this.orignalHeight = this.bottom * 1.35;
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x, 0, this.width, this.top);
+                    ctx.fillRect(this.x, cH - this.bottom, this.width, this.bottom);
+                }
+                update() {
+                    this.x -= gameSpeed;
+                    if (!this.obstaclepassed && this.x < bird.x) {
+                        score++;
+                        this.obstaclepassed = true;
+                    }
+                    this.draw();
+                };
+            };
+
+            function handleObstacles() {
+                if (frame % 50 === 0) {
+                    obstaclesArray.unshift(new Obstacles);
+                }
+                for (let i in obstaclesArray) {
+                    obstaclesArray[i].update();
+                }
+                if (obstaclesArray.length > 20) {
+                    obstaclesArray.pop(obstaclesArray[0]);
+                }
+            }
+
+            function handleCollision() {
+                for (let i in obstaclesArray) {
+                    if (bird.x < obstaclesArray[i].x + obstaclesArray[i].width && bird.x + bird.width > obstaclesArray[i].x && ((bird.y < 0 + obstaclesArray[i].top && bird.y + bird.height > 0) || (bird.y > cH - obstaclesArray[i].bottom && bird.y + bird.height < cH))) {
+                        ctx.font = "32px Helvetica";
+                        ctx.fillStyle = "white";
+                        ctx.fillText("You lost! Try again. Your score: " + score, cW / 4, cH / 2 - 10);
+                        gameoverho = true;
+                        return true;
+                    }
+                }
+            };
+
+            function resetNow() {
+                if (gameoverho === true) {
+                    bird.x = 150;
+                    bird.y = 200;
+                    bg.x1 = 0;
+                    particlesArray = [];
+                    obstaclesArray = [];
+                    score = 0;
+                    gameSpeed = 2;
+                    gameoverho = false;
+                    bg.x1 = 0;
+                    bg.x2 = cW;
+                    animate();
+                }
+            }
+
+            reset.onclick = () => {
+                ctx.clearRect(0, 0, cW, cH);
+                resetNow();
+                handleBackground();
+                bird.update();
+                bird.draw();
+                handleParticles();
+                handleObstacles();
+                handleCollision();
+            };
+
+            animate();
+        }
+    </script>
+</body>
+</html>
