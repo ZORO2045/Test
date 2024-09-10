@@ -13,8 +13,9 @@
             user-select: none; /* Disable text selection */
         }
         canvas {
-            width: 100%;
+            display: block;
             background: #eee;
+            margin: 0 auto; /* Center the canvas */
         }
         #button, #reset {
             width: 100%;
@@ -59,6 +60,24 @@
             background: linear-gradient(45deg, #ff4c4c, #ff9e1a);
             transform: scale(1.05);
         }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 600px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            #button, #reset {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (min-width: 601px) {
+            canvas {
+                width: 700px;
+                height: 750px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -73,15 +92,16 @@
     <button id="button">Press to Play</button>
     <center>
         <hr>
-        <div id="developer"><a href="https://t.me/your_telegram_username">Developer: ፚ Ꭷ Ꮢ Ꭷ ❥</a></div>
+        <div id="developer">Developer: <a href="https://t.me/your_telegram_username">Ꭷ Ꮢ Ꭷ ❥</a></div>
+        <button id="text">Programming World</button>
     </center>
     <script>
         window.onload = () => {
             "use strict";
             const c = document.getElementById("canvas");
             const ctx = c.getContext("2d");
-            const cW = c.width = 700;
-            const cH = c.height = 750;
+            const cW = c.width = window.innerWidth < 600 ? window.innerWidth : 700;
+            const cH = c.height = window.innerWidth < 600 ? window.innerHeight * 0.8 : 750;
             const btn = document.getElementById("button");
             const reset = document.getElementById("reset");
 
@@ -360,4 +380,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
